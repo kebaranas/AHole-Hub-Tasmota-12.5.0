@@ -49,6 +49,7 @@
 
 const uint16_t CHUNKED_BUFFER_SIZE = 500;                // Chunk buffer size (needs to be well below stack space (4k for ESP8266, 8k for ESP32) but large enough to cache some small messages)
 
+const uint16_t HTTP_HEADER_REFRESH_TIME = 0;
 const uint16_t HTTP_REFRESH_TIME = 2345;                 // milliseconds
 const uint16_t HTTP_RESTART_RECONNECT_TIME = 10000;      // milliseconds - Allow time for restart and wifi reconnect
 #ifdef ESP8266
@@ -61,10 +62,16 @@ const uint16_t HTTP_OTA_RESTART_RECONNECT_TIME = 10000;  // milliseconds - Allow
 #include <ESP8266WebServer.h>
 #include <DNSServer.h>
 
+#include "./html_uncompressed/HTTP_HEADER_MONITOR.h"
+
 #ifdef USE_UNISHOX_COMPRESSION
   #include "./html_compressed/HTTP_HEADER1_ES6.h"
+  #include "./html_compressed/HTTP_HEADER2_ES6.h"
+  #include "./html_compressed/HTTP_HEADER_MONITOR.h"
 #else
   #include "./html_uncompressed/HTTP_HEADER1_ES6.h"
+  #include "./html_uncompressed/HTTP_HEADER2_ES6.h"
+  #include "./html_uncompressed/HTTP_HEADER_MONITOR.h"
 #endif
 
 const char HTTP_SCRIPT_COUNTER[] PROGMEM =
@@ -399,18 +406,18 @@ const char HTTP_DEVICE_STATE[] PROGMEM = "<td style='width:%d%%;text-align:cente
 
 enum ButtonTitle {
   BUTTON_RESTART, BUTTON_RESET_CONFIGURATION,
-  BUTTON_MAIN, BUTTON_CONFIGURATION, BUTTON_INFORMATION, BUTTON_FIRMWARE_UPGRADE, BUTTON_MANAGEMENT,
-  BUTTON_MODULE, BUTTON_WIFI, BUTTON_LOGGING, BUTTON_OTHER, BUTTON_TEMPLATE, BUTTON_BACKUP, BUTTON_RESTORE,
+  BUTTON_MAIN, BUTTON_MONITOR, BUTTON_CONFIGURATION, BUTTON_INFORMATION, BUTTON_FIRMWARE_UPGRADE, BUTTON_MANAGEMENT,
+  BUTTON_INSTRUMENT, BUTTON_MODULE, BUTTON_WIFI, BUTTON_LOGGING, BUTTON_OTHER, BUTTON_TEMPLATE, BUTTON_BACKUP, BUTTON_RESTORE,
   BUTTON_CONSOLE };
 const char kButtonTitle[] PROGMEM =
   D_RESTART "|" D_RESET_CONFIGURATION "|"
-  D_MAIN_MENU "|" D_CONFIGURATION "|" D_INFORMATION "|" D_FIRMWARE_UPGRADE "|" D_MANAGEMENT "|"
-  D_CONFIGURE_MODULE "|" D_CONFIGURE_WIFI"|" D_CONFIGURE_LOGGING "|" D_CONFIGURE_OTHER "|" D_CONFIGURE_TEMPLATE "|" D_BACKUP_CONFIGURATION "|" D_RESTORE_CONFIGURATION "|"
+  D_MAIN_MENU "|" D_MONITOR "|" D_CONFIGURATION "|" D_INFORMATION "|" D_FIRMWARE_UPGRADE "|" D_MANAGEMENT "|"
+  D_CONFIGURE_INSTRUMENT "|" D_CONFIGURE_MODULE "|" D_CONFIGURE_WIFI"|" D_CONFIGURE_LOGGING "|" D_CONFIGURE_OTHER "|" D_CONFIGURE_TEMPLATE "|" D_BACKUP_CONFIGURATION "|" D_RESTORE_CONFIGURATION "|"
   D_CONSOLE;
 const char kButtonAction[] PROGMEM =
   ".|rt|"
-  ".|cn|in|up|mn|"
-  "md|wi|lg|co|tp|dl|rs|"
+  ".|mo|cn|in|up|mn|"
+  "it|md|wi|lg|co|tp|dl|rs|"
   "cs";
 const char kButtonConfirm[] PROGMEM = D_CONFIRM_RESTART "|" D_CONFIRM_RESET_CONFIGURATION;
 
@@ -538,6 +545,7 @@ typedef struct WebServerDispatch_t {
 
 const WebServerDispatch_t WebServerDispatch[] PROGMEM = {
   { "",   HTTP_ANY, HandleRoot },
+  { "mo", HTTP_ANY, HandleMonitor },
   { "up", HTTP_ANY, HandleUpgradeFirmware },
   { "u1", HTTP_ANY, HandleUpgradeFirmwareStart },   // OTA
   { "u2", HTTP_OPTIONS, HandlePreflightRequest },
@@ -551,6 +559,7 @@ const WebServerDispatch_t WebServerDispatch[] PROGMEM = {
   { "cm", HTTP_ANY, HandleHttpCommand },
 #ifndef FIRMWARE_MINIMAL
   { "cn", HTTP_ANY, HandleConfiguration },
+  { "it", HTTP_ANY, HandleInstrumentConfiguration },
   { "md", HTTP_ANY, HandleModuleConfiguration },
   { "wi", HTTP_ANY, HandleWifiConfiguration },
   { "lg", HTTP_ANY, HandleLoggingConfiguration },
@@ -843,7 +852,11 @@ void WSContentSend_PD(const char* formatP, ...) {  // Content send snprintf_P ch
   va_end(arg);
 }
 
-void WSContentStart_P(const char* title, bool auth) {
+void WSContentStart_P(const char* title) {
+  WSContentStart_P(title, false, true);
+}
+
+void WSContentStart_P(const char* title, bool monitor, bool auth) {
   if (auth && !WebAuthenticate()) {
     return Webserver->requestAuthentication();
   }
@@ -852,11 +865,22 @@ void WSContentStart_P(const char* title, bool auth) {
 
   if (title != nullptr) {
     WSContentSend_P(HTTP_HEADER1, PSTR(D_HTML_LANGUAGE), SettingsText(SET_DEVICENAME), title);
+    if (monitor) { 
+      WSContentSend_P(HTTP_HEADER_MONITOR);
+      Webserver->on("/Chart.js", HTTP_GET, []() {
+        char buf[2048];
+        TfsLoadFile("/Chart.js", (uint8_t*)buf, 2047);
+        Webserver->send(200, "text/javascript", buf);
+      });
+    }
+    WSContentSend_P(HTTP_HEADER2);
+    #ifdef USE_SCRIPT_WEB_DISPLAY
+    WSContentSend_P(HTTP_SCRIPT_ROOT, 0, 0);
+    #else
+    WSContentSend_P(HTTP_SCRIPT_ROOT, 0);
+    #endif
+    WSContentSend_P(HTTP_SCRIPT_ROOT_PART2);
   }
-}
-
-void WSContentStart_P(const char* title) {
-  WSContentStart_P(title, true);
 }
 
 void WSContentSendStyle_P(const char* formatP, ...) {
@@ -925,6 +949,8 @@ void WSContentSendStyle_P(const char* formatP, ...) {
     }
   }
   WSContentSend_P(PSTR("</div>"));
+
+  WSContentSend_P(PSTR("<div style='padding:0;' id='l1' name='l1'></div>"));
 }
 
 void WSContentSendStyle(void) {
@@ -1012,7 +1038,7 @@ void WebRestart(uint32_t type) {
 
   bool reset_only = (HTTP_MANAGER_RESET_ONLY == Web.state);
 
-  WSContentStart_P((type) ? PSTR(D_SAVE_CONFIGURATION) : PSTR(D_RESTART), !reset_only);
+  WSContentStart_P((type) ? PSTR(D_SAVE_CONFIGURATION) : PSTR(D_RESTART), false, !reset_only);
 #if ((RESTART_AFTER_INITIAL_WIFI_CONFIG) && (AFTER_INITIAL_WIFI_CONFIG_GO_TO_NEW_IP))
   // In case of type 3 (New network has been configured) go to the new device's IP in the new Network
   if (3 == type) {
@@ -1070,7 +1096,7 @@ void WebRestart(uint32_t type) {
 
 void HandleWifiLogin(void)
 {
-  WSContentStart_P(PSTR(D_CONFIGURE_WIFI), false);  // false means show page no matter if the client has or has not credentials
+  WSContentStart_P(PSTR(D_CONFIGURE_WIFI), false, false);  // false means show page no matter if the client has or has not credentials
   WSContentSendStyle();
   WSContentSend_P(HTTP_FORM_LOGIN);
 
@@ -1155,16 +1181,9 @@ void HandleRoot(void)
   char stemp[33];
 
   WSContentStart_P(PSTR(D_MAIN_MENU));
-#ifdef USE_SCRIPT_WEB_DISPLAY
-  WSContentSend_P(HTTP_SCRIPT_ROOT, Settings->web_refresh, Settings->web_refresh);
-#else
-  WSContentSend_P(HTTP_SCRIPT_ROOT, Settings->web_refresh);
-#endif
-  WSContentSend_P(HTTP_SCRIPT_ROOT_PART2);
 
   WSContentSendStyle();
 
-  WSContentSend_P(PSTR("<div style='padding:0;' id='l1' name='l1'></div>"));
   if (TasmotaGlobal.devices_present) {
 #ifdef USE_LIGHT
     if (TasmotaGlobal.light_type) {
@@ -1296,9 +1315,10 @@ void HandleRoot(void)
 
   if (HTTP_ADMIN == Web.state) {
 #ifdef FIRMWARE_MINIMAL
-#ifdef ESP32
+#ifdef ESP32    
 #ifndef FIRMWARE_MINIMAL_ONLY
-    WSContentSpaceButton(BUTTON_INFORMATION);
+    WSContentSpaceButton(BUTTON_MONITOR);
+    WSContentButton(BUTTON_INFORMATION);
     WSContentButton(BUTTON_FIRMWARE_UPGRADE);
 #endif  // FIRMWARE_MINIMAL_ONLY
 #else   // ESP8266
@@ -1306,7 +1326,8 @@ void HandleRoot(void)
 #endif  // ESP32
     WSContentButton(BUTTON_CONSOLE);
 #else
-    WSContentSpaceButton(BUTTON_CONFIGURATION);
+    WSContentSpaceButton(BUTTON_MONITOR);
+    WSContentButton(BUTTON_CONFIGURATION);
     WSContentButton(BUTTON_INFORMATION);
     WSContentButton(BUTTON_FIRMWARE_UPGRADE);
     if (!WebUseManagementSubmenu()) {
@@ -1456,10 +1477,12 @@ bool HandleRootStatusRefresh(void)
   if (Settings->web_time_end) {
     WSContentSend_P(PSTR("{s}" D_TIMER_TIME "{m}%s{e}"), GetDateAndTime(DT_LOCAL).substring(Settings->web_time_start, Settings->web_time_end).c_str());
   }
+
+  WSContentSend_PD(HTTP_SNS_DATE_TIME, GetDateAndTime(DT_LOCAL).c_str());
   XsnsXdrvCall(FUNC_WEB_SENSOR);
 
   WSContentSend_P(PSTR("</table>"));
-
+  
   if (TasmotaGlobal.devices_present) {
     WSContentSend_P(PSTR("{t}<tr>"));
 #ifdef USE_SONOFF_IFAN
@@ -1506,6 +1529,16 @@ int32_t IsShutterWebButton(uint32_t idx) {
 }
 #endif // USE_SHUTTER
 
+void HandleMonitor(void)
+{
+  if (!HttpCheckPriviledgedAccess()) { return; }
+  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_MONITOR));
+  WSContentStart_P(PSTR(D_MONITOR), true, true);
+  WSContentSendStyle();
+  WSContentSpaceButton(BUTTON_MAIN);
+  WSContentStop();
+}
+
 /*-------------------------------------------------------------------------------------------*/
 
 #ifndef FIRMWARE_MINIMAL
@@ -1513,12 +1546,14 @@ int32_t IsShutterWebButton(uint32_t idx) {
 void HandleConfiguration(void)
 {
   if (!HttpCheckPriviledgedAccess()) { return; }
-
+  
   AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_CONFIGURATION));
 
   WSContentStart_P(PSTR(D_CONFIGURATION));
+
   WSContentSendStyle();
 
+  WSContentSpaceButton(BUTTON_INSTRUMENT);
   WSContentButton(BUTTON_MODULE);
   WSContentButton(BUTTON_WIFI);
 
@@ -1754,6 +1789,15 @@ void TemplateSaveSettings(void) {
 
 /*-------------------------------------------------------------------------------------------*/
 
+void HandleInstrumentConfiguration(void) {
+  if (!HttpCheckPriviledgedAccess()) { return; }
+  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_CONFIGURE_INSTRUMENT));
+  WSContentStart_P(PSTR(D_CONFIGURE_INSTRUMENT));
+  WSContentSendStyle();
+  WSContentSpaceButton(BUTTON_CONFIGURATION);
+  WSContentStop();
+}
+
 void HandleModuleConfiguration(void) {
   if (!HttpCheckPriviledgedAccess()) { return; }
 
@@ -1910,7 +1954,7 @@ void HandleWifiConfiguration(void) {
     }
   }
 
-  WSContentStart_P(PSTR(D_CONFIGURE_WIFI), !WifiIsInManagerMode());
+  WSContentStart_P(PSTR(D_CONFIGURE_WIFI), false, !WifiIsInManagerMode());
   WSContentSend_P(HTTP_SCRIPT_WIFI);
   if (WifiIsInManagerMode()) { WSContentSend_P(HTTP_SCRIPT_HIDE); }
   if (WIFI_TESTING == Wifi.wifiTest) { WSContentSend_P(HTTP_SCRIPT_RELOAD_TIME, HTTP_RESTART_RECONNECT_TIME); }
@@ -2286,7 +2330,7 @@ void HandleResetConfiguration(void)
 
   AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_RESET_CONFIGURATION));
 
-  WSContentStart_P(PSTR(D_RESET_CONFIGURATION), !WifiIsInManagerMode());
+  WSContentStart_P(PSTR(D_RESET_CONFIGURATION), false, !WifiIsInManagerMode());
   WSContentSendStyle();
   WSContentSend_P(PSTR("<div style='text-align:center;'>" D_CONFIGURATION_RESET "</div>"));
   WSContentSend_P(HTTP_MSG_RSTRT);

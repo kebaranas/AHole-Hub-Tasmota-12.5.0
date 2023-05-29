@@ -124,8 +124,8 @@ for file in files:
 
   in_bytes = bytearray(input, 'utf-8')
   in_len = len(in_bytes)
+  print(in_len)
   out_bytes = bytearray(in_len * 2)
-
   UNISHOX = unishox.Unishox()
   out_len = UNISHOX.compress(in_bytes, len(in_bytes), out_bytes, len(out_bytes))
   print("  ####### Compression result:")

@@ -115,3 +115,4 @@ Index | Define              | Driver   | Device   | Address(es) | Description
   77  | USE_MCP23XXX_DRV    | xdrv_67  | MCP23x17 | 0x20 - 0x26 | 16-bit I/O expander as virtual button/switch/relay
   78  | USE_PMSA003I        | xsns_104 | PMSA003I | 0x12        | PM2.5 Air Quality Sensor with I2C Interface
   79  | USE_GDK101          | xsns_106 | GDK101   | 0x18 - 0x1B | Gamma Radiation Sensor
+  80  | USE_AXP192          | xdrv_128 | AXP192   | 0x68        | Single cell Li-battery and power management IC

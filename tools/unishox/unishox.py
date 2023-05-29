@@ -511,11 +511,11 @@ class Unishox:
 if __name__ == "__main__":
     # pylint: disable=line-too-long
     UNISHOX = Unishox()
-    BYTES_ = bytearray(2048)
+    BYTES_ = bytearray(350000)
     INN = bytearray(b'ON Switch1#State==1 DO Add1 1 ENDON ON Var1#State==0 DO ShutterStop1 ENDON ON Var1#State==1 DO ShutterClose1 ENDON ON Var1#State>=2 DO Var1 0 ENDON ON Shutter1#Close DO Var1 0 ENDON ON Switch2#State==1 DO Add2 1 ENDON ON Var2#State==0 DO ShutterStop1 ENDON ON Var2#State==1 DO ShutterOpen1 ENDON ON Var2#State>=2 DO Var2 0 ENDON ON Shutter1#Open DO Var2 0 ENDON')
     LEN_ = UNISHOX.compress(INN, len(INN), BYTES_, len(BYTES_))
     print("Compressed from {fromm} to {to} ({p}%)".format(fromm=len(INN), to=LEN_, p=(100-LEN_/len(INN)*100)))
 
-    OUT = bytearray(2048)
+    OUT = bytearray(350000)
     LEN_ = UNISHOX.decompress(BYTES_, LEN_, OUT, len(OUT))
     print(str(OUT, 'utf-8').split('\x00')[0])

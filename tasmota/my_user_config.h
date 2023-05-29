@@ -259,7 +259,7 @@
 #define LONGITUDE              2.294442          // [Longitude] Your location to be used with sunrise and sunset
 
 // -- Application ---------------------------------
-#define APP_TIMEZONE           1                 // [Timezone] +1 hour (Amsterdam) (-13 .. 14 = hours from UTC, 99 = use TIME_DST/TIME_STD)
+#define APP_TIMEZONE           8                 // [Timezone] +1 hour (Amsterdam) (-13 .. 14 = hours from UTC, 99 = use TIME_DST/TIME_STD)
 #define APP_LEDSTATE           LED_POWER         // [LedState] Function of led
                                                  //   (LED_OFF, LED_POWER, LED_MQTTSUB, LED_POWER_MQTTSUB, LED_MQTTPUB, LED_POWER_MQTTPUB, LED_MQTT, LED_POWER_MQTT)
 #define APP_LEDMASK            0xFFFF            // [LedMask] Assign Relay to Power led (0xFFFF is default)
@@ -837,6 +837,7 @@
 #define USE_ENERGY_MARGIN_DETECTION              // Add support for Energy Margin detection (+1k6 code)
   #define USE_ENERGY_POWER_LIMIT                 // Add additional support for Energy Power Limit detection (+1k2 code)
 #define USE_ENERGY_DUMMY                         // Add support for dummy Energy monitor allowing user values (+0k7 code)
+// #define USE_AXP192                               // Add support for AXP192 single cell Li-battery and power system management IC
 #define USE_HLW8012                              // Add support for HLW8012, BL0937 or HJL-01 Energy Monitor for Sonoff Pow and WolfBlitz
 #define USE_CSE7766                              // Add support for CSE7766 Energy Monitor for Sonoff S31 and Pow R2
 #define USE_PZEM004T                             // Add support for PZEM004T Energy monitor (+2k code)

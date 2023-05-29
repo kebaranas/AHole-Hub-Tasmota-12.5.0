@@ -58,6 +58,7 @@
 #define D_AS "as"
 #define D_AUTO "AUTO"
 #define D_BATT "Batt"                // Short for Battery
+#define D_BATTERY_STATUS "Battery Status"
 #define D_BLINK "Blink"
 #define D_BLINKOFF "BlinkOff"
 #define D_BOOT_COUNT "Boot Count"
@@ -68,6 +69,7 @@
 #define D_BYTES "Bytes"
 #define D_CELSIUS "Celsius"
 #define D_CHANNEL "Channel"
+#define D_CHARGING "Charging"
 #define D_CO2 "Carbon dioxide"
 #define D_CODE "code"                // Button code
 #define D_COLDLIGHT "Cold"
@@ -80,6 +82,7 @@
 #define D_CURRENT "Current"          // As in Voltage and Current
 #define D_CURRENT_NEUTRAL "Current Neutral"
 #define D_DATA "Data"
+#define D_DATE_TIME "Date & Time"
 #define D_DARKLIGHT "Dark"
 #define D_DEBUG "Debug"
 #define D_DEWPOINT "Dew point"
@@ -129,12 +132,15 @@
 #define D_LIGHT "Light"
 #define D_LWT "LWT"
 #define D_LQI "LQI"                  // Zigbee Link Quality Index
+#define D_MEMORY_CARD_STATUS "Memory Card Status"
 #define D_MODULE "Module"
 #define D_MOISTURE "Moisture"
 #define D_MQTT "MQTT"
 #define D_MULTI_PRESS "multi-press"
+#define D_NO_BATTERY "No Battery"
 #define D_NOISE "Noise"
 #define D_NONE "None"
+#define D_NOT_CHARGING "Not Charging"
 #define D_NOX "NOx"
 #define D_O2 "Oxygen"
 #define D_OFF "Off"
@@ -274,7 +280,9 @@
 #define D_MANAGEMENT "Consoles"
 #define D_CONSOLE "Console"
 #define D_CONFIRM_RESTART "Confirm Restart"
+#define D_MONITOR "Monitor"
 
+#define D_CONFIGURE_INSTRUMENT "Configure Instrument"
 #define D_CONFIGURE_MODULE "Configure Module"
 #define D_CONFIGURE_WIFI "Configure WiFi"
 #define D_CONFIGURE_MQTT "Configure MQTT"

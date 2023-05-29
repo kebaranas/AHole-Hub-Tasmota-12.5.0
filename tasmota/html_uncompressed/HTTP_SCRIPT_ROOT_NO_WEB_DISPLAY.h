@@ -9,7 +9,6 @@ const char HTTP_SCRIPT_ROOT[] PROGMEM =
       "if(x.readyState==4&&x.status==200){"
         "var s=x.responseText.replace(/{t}/g,\"<table style='width:100%%'>\")"
                             ".replace(/{s}/g,\"<tr><th>\")"
-//                            ".replace(/{m}/g,\"</th><td>\")"
                             ".replace(/{m}/g,\"</th><td style='width:20px;white-space:nowrap'>\")"  // I want a right justified column with left justified text
                             ".replace(/{e}/g,\"</td></tr>\");"
         "eb('l1').innerHTML=s;"
