@@ -294,6 +294,7 @@
 #define D_BACKUP_CONFIGURATION "Backup Configuration"
 #define D_RESTORE_CONFIGURATION "Restore Configuration"
 #define D_MAIN_MENU "Main Menu"
+#define D_CHART_JS "Chart.js"
 
 #define D_MODULE_PARAMETERS "Module parameters"
 #define D_MODULE_TYPE "Module type"

@@ -257,13 +257,6 @@ const char HTTP_HEAD_STYLE3[] PROGMEM =
 #endif  // FIRMWARE_SAFEBOOT
 #endif  // FIRMWARE_MINIMAL
   "<div style='text-align:center;color:#%06x;'><noscript>" D_NOSCRIPT "<br></noscript>" // COLOR_TITLE
-/*
-#ifdef LANGUAGE_MODULE_NAME
-  "<h3>" D_MODULE " %s</h3>"
-#else
-  "<h3>%s " D_MODULE "</h3>"
-#endif
-*/
   "<h3>%s</h3>"    // Module name
   "<h2>%s</h2>";   // Device name
 
@@ -421,8 +414,8 @@ const char kButtonAction[] PROGMEM =
   "cs";
 const char kButtonConfirm[] PROGMEM = D_CONFIRM_RESTART "|" D_CONFIRM_RESET_CONFIGURATION;
 
-enum CTypes { CT_HTML, CT_PLAIN, CT_XML, CT_STREAM, CT_APP_JSON, CT_APP_STREAM };
-const char kContentTypes[] PROGMEM = "text/html|text/plain|text/xml|text/event-stream|application/json|application/octet-stream";
+enum CTypes { CT_HTML, CT_PLAIN, CT_XML, CT_JS, CT_STREAM, CT_APP_JSON, CT_APP_STREAM };
+const char kContentTypes[] PROGMEM = "text/html|text/plain|text/xml|text/javascript|text/event-stream|application/json|application/octet-stream";
 
 const char kLoggingOptions[] PROGMEM = D_SERIAL_LOG_LEVEL "|" D_WEB_LOG_LEVEL "|" D_MQTT_LOG_LEVEL "|" D_SYS_LOG_LEVEL;
 const char kLoggingLevels[] PROGMEM = D_NONE "|" D_ERROR "|" D_INFO "|" D_DEBUG "|" D_MORE_DEBUG;
@@ -462,46 +455,15 @@ static void WebGetArg(const char* arg, char* out, size_t max)
 {
   String s = Webserver->arg((const __FlashStringHelper *)arg);
   strlcpy(out, s.c_str(), max);
-//  out[max-1] = '\0';  // Ensure terminating NUL
 }
 
 String AddWebCommand(const char* command, const char* arg, const char* dflt) {
-/*
-  // OK but fixed max argument
-  char param[200];                             // Allow parameter with lenght up to 199 characters
-  WebGetArg(arg, param, sizeof(param));
-  uint32_t len = strlen(param);
-  char cmnd[232];
-  snprintf_P(cmnd, sizeof(cmnd), PSTR(";%s %s"), command, (0 == len) ? dflt : (StrCaseStr_P(command, PSTR("Password")) && (len < 5)) ? "" : param);
-  return String(cmnd);
-*/
-/*
-  // Any argument size (within stack space) +48 bytes
-  String param = Webserver->arg((const __FlashStringHelper *)arg);
-  uint32_t len = param.length();
-//  char cmnd[len + strlen_P(command) + strlen_P(dflt) + 4];
-  char cmnd[64 + len];
-  snprintf_P(cmnd, sizeof(cmnd), PSTR(";%s %s"), command, (0 == len) ? dflt : (StrCaseStr_P(command, PSTR("Password")) && (len < 5)) ? "" : param.c_str());
-  return String(cmnd);
-*/
-  // Any argument size (within heap space) +24 bytes
-  // Exception (3) if not first moved from flash to stack
-  // Exception (3) if not using __FlashStringHelper
-  // Exception (3) if not FPSTR()
-//  char rcommand[strlen_P(command) +1];
-//  snprintf_P(rcommand, sizeof(rcommand), command);
-//  char rdflt[strlen_P(dflt) +1];
-//  snprintf_P(rdflt, sizeof(rdflt), dflt);
   String result = F(";");
-//  result += rcommand;
-//  result += (const __FlashStringHelper *)command;
   result += FPSTR(command);
   result += F(" ");
   String param = Webserver->arg(FPSTR(arg));
   uint32_t len = param.length();
   if (0 == len) {
-//    result += rdflt;
-//    result += (const __FlashStringHelper *)dflt;
     result += FPSTR(dflt);
   }
   else if (!(StrCaseStr_P(command, PSTR("Password")) && (len < 5))) {
@@ -538,7 +500,7 @@ void ExecuteWebCommand(char* svalue) {
 
 // replace the series of `Webserver->on()` with a table in PROGMEM
 typedef struct WebServerDispatch_t {
-  char uri[3];   // the prefix "/" is added automatically
+  char uri[14];   // the prefix "/" is added automatically
   uint8_t method;
   void (*handler)(void);
 } WebServerDispatch_t;
@@ -609,8 +571,8 @@ void StartWebserver(int type)
         WebServer_on(uri, line.handler, pgm_read_byte(&line.method));
       }
       Webserver->onNotFound(HandleNotFound);
-//      Webserver->on(F("/u2"), HTTP_POST, HandleUploadDone, HandleUploadLoop);  // this call requires 2 functions so we keep a direct call
       Webserver->on("/u2", HTTP_POST, HandleUploadDone, HandleUploadLoop);  // this call requires 2 functions so we keep a direct call
+      Webserver->on("/Chart.bundle.min.js", HTTP_GET, HandleChart);  // this call requires 2 functions so we keep a direct call
 #ifndef FIRMWARE_MINIMAL
       XdrvXsnsCall(FUNC_WEB_ADD_HANDLER);
 #endif  // Not FIRMWARE_MINIMAL
@@ -853,10 +815,10 @@ void WSContentSend_PD(const char* formatP, ...) {  // Content send snprintf_P ch
 }
 
 void WSContentStart_P(const char* title) {
-  WSContentStart_P(title, false, true);
+  WSContentStart_P(title, true, false);
 }
 
-void WSContentStart_P(const char* title, bool monitor, bool auth) {
+void WSContentStart_P(const char* title, bool auth, bool monitor) {
   if (auth && !WebAuthenticate()) {
     return Webserver->requestAuthentication();
   }
@@ -865,14 +827,7 @@ void WSContentStart_P(const char* title, bool monitor, bool auth) {
 
   if (title != nullptr) {
     WSContentSend_P(HTTP_HEADER1, PSTR(D_HTML_LANGUAGE), SettingsText(SET_DEVICENAME), title);
-    if (monitor) { 
-      WSContentSend_P(HTTP_HEADER_MONITOR);
-      Webserver->on("/Chart.js", HTTP_GET, []() {
-        char buf[2048];
-        TfsLoadFile("/Chart.js", (uint8_t*)buf, 2047);
-        Webserver->send(200, "text/javascript", buf);
-      });
-    }
+    if (monitor) { WSContentSend_P(PTSR("<script src='Chart.bundle.min.js'></script>")); }
     WSContentSend_P(HTTP_HEADER2);
     #ifdef USE_SCRIPT_WEB_DISPLAY
     WSContentSend_P(HTTP_SCRIPT_ROOT, 0, 0);
@@ -1535,8 +1490,35 @@ void HandleMonitor(void)
   AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_MONITOR));
   WSContentStart_P(PSTR(D_MONITOR), true, true);
   WSContentSendStyle();
+  WSContentSend(PSTR("<div>"));
+  WSContentSend_P(PSTR("<canvas id='%s' width='800' height='450'></canvas>"), "p");
+  WSContentSend(PSTR("</div>"));
   WSContentSpaceButton(BUTTON_MAIN);
   WSContentStop();
+}
+
+void HandleChart(void) 
+{
+  FS *fs = &LittleFS;
+  const char fname[] = "/Chart.bundle.min.js";
+  if (fs->exists(fname)) {
+    File file = fs->open(fname, "r");
+    WSContentBegin(200, CT_JS);
+    uint8_t *buf = (uint8_t*)malloc(1025);
+    size_t filelen = file.size();   
+    while (filelen > 0) {
+      size_t l = file.read(buf, 1024);
+      if (l < 0) { break; }
+      buf[l] = '\0';
+      WSContentSend_P(PSTR("%s"), buf);
+      filelen -= l;
+    }
+    file.close();
+    free(buf);
+    AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_CHART_JS));
+  } else {
+    HandleNotFound();
+  }
 }
 
 /*-------------------------------------------------------------------------------------------*/

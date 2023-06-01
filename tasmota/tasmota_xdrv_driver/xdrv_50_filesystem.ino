@@ -901,10 +901,6 @@ uint8_t UfsDownloadFile(char *file) {
     cnt++;
     if (cnt > 7) {
       cnt = 0;
-      //if (glob_script_mem.script_loglevel & 0x80) {
-        // this indeed multitasks, but is slower 50 kB/s
-      //  loop();
-      //}
     }
     delay(0);
     OsWatchLoop();
@@ -958,8 +954,6 @@ void download_task(void *path) {
       break;
     }
   }
-  //snprintf_P(attachment, sizeof(attachment), PSTR("download file '%s' as '%s'"), file, cp);
-  //Webserver->sendHeader(F("X-Tasmota-Debug"), attachment);
   snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s"), cp);
   Webserver->sendHeader(F("Content-Disposition"), attachment);
   WSSend(200, CT_APP_STREAM, "");
@@ -1154,9 +1148,6 @@ bool Xdrv50(uint32_t function) {
       }
       break;
     case FUNC_WEB_ADD_HANDLER:
-//      Webserver->on(F("/ufsd"), UfsDirectory);
-//      Webserver->on(F("/ufsu"), HTTP_GET, UfsDirectory);
-//      Webserver->on(F("/ufsu"), HTTP_POST,[](){Webserver->sendHeader(F("Location"),F("/ufsu"));Webserver->send(303);}, HandleUploadLoop);
       Webserver->on("/ufsd", UfsDirectory);
       Webserver->on("/ufsu", HTTP_GET, UfsDirectory);
       Webserver->on("/ufsu", HTTP_POST,[](){Webserver->sendHeader(F("Location"),F("/ufsu"));Webserver->send(303);}, HandleUploadLoop);
