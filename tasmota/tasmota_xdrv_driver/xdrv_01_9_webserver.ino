@@ -62,16 +62,14 @@ const uint16_t HTTP_OTA_RESTART_RECONNECT_TIME = 10000;  // milliseconds - Allow
 #include <ESP8266WebServer.h>
 #include <DNSServer.h>
 
-#include "./html_uncompressed/HTTP_HEADER_MONITOR.h"
-
 #ifdef USE_UNISHOX_COMPRESSION
   #include "./html_compressed/HTTP_HEADER1_ES6.h"
   #include "./html_compressed/HTTP_HEADER2_ES6.h"
-  #include "./html_compressed/HTTP_HEADER_MONITOR.h"
+  #include "./html_compressed/HTTP_SCRIPT_CHART.h"
 #else
   #include "./html_uncompressed/HTTP_HEADER1_ES6.h"
   #include "./html_uncompressed/HTTP_HEADER2_ES6.h"
-  #include "./html_uncompressed/HTTP_HEADER_MONITOR.h"
+  #include "./html_uncompressed/HTTP_SCRIPT_CHART.h"
 #endif
 
 const char HTTP_SCRIPT_COUNTER[] PROGMEM =
@@ -397,6 +395,8 @@ const char HTTP_END[] PROGMEM =
 const char HTTP_DEVICE_CONTROL[] PROGMEM = "<td style='width:%d%%'><button onclick='la(\"&o=%d\");'>%s%s</button></td>";  // ?o is related to WebGetArg(PSTR("o"), tmp, sizeof(tmp))
 const char HTTP_DEVICE_STATE[] PROGMEM = "<td style='width:%d%%;text-align:center;font-weight:%s;font-size:%dpx'>%s</td>";
 
+const char HTTP_MONITOR_CANVAS[] PROGMEM = "<canvas id='%s' width='800' height='450' />";
+
 enum ButtonTitle {
   BUTTON_RESTART, BUTTON_RESET_CONFIGURATION,
   BUTTON_MAIN, BUTTON_MONITOR, BUTTON_CONFIGURATION, BUTTON_INFORMATION, BUTTON_FIRMWARE_UPGRADE, BUTTON_MANAGEMENT,
@@ -623,7 +623,7 @@ void WifiManagerBegin(bool reset_only)
   if ((channel < 1) || (channel > 13)) { channel = 1; }
 
   // bool softAP(const char* ssid, const char* passphrase = NULL, int channel = 1, int ssid_hidden = 0, int max_connection = 4);
-  WiFi.softAP(TasmotaGlobal.hostname, TasmotaGlobal.host_password, channel, 0, 4);
+  WiFi.softAP(TasmotaGlobal.hostname, TasmotaGlobal.host_password, channel, 0, 1);
   delay(500); // Without delay I've seen the IP address blank
   /* Setup the DNS server redirecting all the domains to the apIP */
   DnsServer->setErrorReplyCode(DNSReplyCode::NoError);
@@ -827,7 +827,7 @@ void WSContentStart_P(const char* title, bool auth, bool monitor) {
 
   if (title != nullptr) {
     WSContentSend_P(HTTP_HEADER1, PSTR(D_HTML_LANGUAGE), SettingsText(SET_DEVICENAME), title);
-    if (monitor) { WSContentSend_P(PTSR("<script src='Chart.bundle.min.js'></script>")); }
+    if (monitor) { WSContentSend_P(PSTR("<script src='Chart.bundle.min.js'></script>")); }
     WSContentSend_P(HTTP_HEADER2);
     #ifdef USE_SCRIPT_WEB_DISPLAY
     WSContentSend_P(HTTP_SCRIPT_ROOT, 0, 0);
@@ -1489,10 +1489,11 @@ void HandleMonitor(void)
   if (!HttpCheckPriviledgedAccess()) { return; }
   AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP D_MONITOR));
   WSContentStart_P(PSTR(D_MONITOR), true, true);
+  WSContentSend_P(HTTP_SCRIPT_CHART);
   WSContentSendStyle();
-  WSContentSend(PSTR("<div>"));
-  WSContentSend_P(PSTR("<canvas id='%s' width='800' height='450'></canvas>"), "p");
-  WSContentSend(PSTR("</div>"));
+  WSContentSend_P(PSTR("<div>"));
+  WSContentSend_P(HTTP_MONITOR_CANVAS, "p");
+  WSContentSend_P(PSTR("</div>"));
   WSContentSpaceButton(BUTTON_MAIN);
   WSContentStop();
 }
