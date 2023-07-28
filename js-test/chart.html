@@ -1,0 +1,81 @@
+<html>
+<!-- Adding a data chart using Chart.js -->
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+<div>
+  <canvas id="pc" width="800" height="450"></canvas>
+</div>
+<script>
+  var pc
+  wl=f=>window.addEventListener('load',f);
+  eb=s=>document.getElementById(s);
+  var mdp = 20;
+
+  var pc;
+  function pcrds(){
+    pc.data.datasets.pop();
+    pc.update();
+  }
+  function pcads(labels, dataset){
+    pc.data.labels=labels;
+    pc.data.dataset.push(dataset);
+    pc.update();
+  }
+  function pcrd(){
+    pc.data.labels.splice(-1, 1); 
+    pc.data.datasets.forEach(dataset=>{dataset.data.pop();});
+    pc.update();
+  }
+  function pci() {
+    pc = new Chart(eb('pc'), {
+      type: 'line',
+      data:{
+        labels:[new Date(1), new Date(2), new Date(3), new Date(4), new Date(5)],
+        datasets: [{
+          axis: 'y',
+          borderColor: '#0bb4ff',
+          backgroundColor: '#0bb4ff',
+          label: 'Pressure (Pa)'
+        }]
+      },
+      options: {
+        reponsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Pressure Line Chart'
+          },
+          decimation: {
+            enabled: true,
+            algorithm: 'lttb',
+            samples: mdp
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            type: 'logarithmic',
+            title: {
+              display: true,
+              text: 'Time'
+            }
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: 'Value'
+            }
+          }
+        }
+      }
+    });
+  }
+  wl(pci);
+</script>
+</body>
+</html>
+

@@ -467,6 +467,42 @@ String EthernetMacAddress(void);
 #define COLOR_TITLE_TEXT			      COLOR_TEXT // Title text color defaults to global text color either dark or light
 #endif
 
+// color palette for the chart
+#ifndef COLOR_PALETTE_1
+#define COLOR_PALETTE_1			        "#043299"
+#endif
+#ifndef COLOR_PALETTE_2
+#define COLOR_PALETTE_2			        "#054ae4"
+#endif
+#ifndef COLOR_PALETTE_3
+#define COLOR_PALETTE_3			        "#6d99fc"
+#endif
+#ifndef COLOR_PALETTE_4
+#define COLOR_PALETTE_4			        "#996a04"
+#endif
+#ifndef COLOR_PALETTE_5
+#define COLOR_PALETTE_5			        "#e49e05"
+#endif
+#ifndef COLOR_PALETTE_6
+#define COLOR_PALETTE_6			        "#d2e716"
+#endif
+#ifndef COLOR_PALETTE_7
+#define COLOR_PALETTE_7			        "#6a84c8"
+#endif
+#ifndef COLOR_PALETTE_8
+#define COLOR_PALETTE_8			        "#f22520"
+#endif
+#ifndef COLOR_PALETTE_9
+#define COLOR_PALETTE_9			        "#2896cf"
+#endif
+#ifndef COLOR_PALETTE_10
+#define COLOR_PALETTE_10		        "#34adc7"
+#endif
+#ifndef COLOR_PALETTE_11
+#define COLOR_PALETTE_11		        "#002a22"
+#endif
+
+
 enum WebColors {
   COL_TEXT, COL_BACKGROUND, COL_FORM,
   COL_INPUT_TEXT, COL_INPUT, COL_CONSOLE_TEXT, COL_CONSOLE,

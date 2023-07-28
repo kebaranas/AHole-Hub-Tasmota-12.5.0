@@ -323,7 +323,9 @@ const be_const_member_t lv_gpio_constants[] = {
     { "ZIGBEE_RST", (int32_t) GPIO_ZIGBEE_RST },
     { "ZIGBEE_RX", (int32_t) GPIO_ZIGBEE_RX },
     { "ZIGBEE_TX", (int32_t) GPIO_ZIGBEE_TX },
-
+    { "SIM7600X_RX", (int32_t) GPIO_SIM7600X_RX },
+    { "SIM7600X_TX", (int32_t) GPIO_SIM7600X_TX },
+    { "SIM7600X_PWR", (int32_t) GPIO_SIM7600X_PWR },
 };
 
 const size_t lv_gpio_constants_size = sizeof(lv_gpio_constants)/sizeof(lv_gpio_constants[0]);

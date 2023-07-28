@@ -84,7 +84,7 @@ struct {
   char run_file[48];
   int run_file_pos = -1;
   bool run_file_mutex = 0;
-  bool download_busy;
+  bool downloadBusy;
 } UfsData;
 
 /*********************************************************************************************/
@@ -853,29 +853,29 @@ void UfsListDir(char *path, uint8_t depth) {
 #endif // ESP32
 
 uint8_t UfsDownloadFile(char *file) {
-  File download_file;
+  File downloadFile;
 
   if (!dfsp->exists(file)) {
     AddLog(LOG_LEVEL_INFO, PSTR("UFS: File '%s' not found"), file);
     return 0;
   }
 
-  download_file = dfsp->open(file, UFS_FILE_READ);
-  if (!download_file) {
+  downloadFile = dfsp->open(file, UFS_FILE_READ);
+  if (!downloadFile) {
     AddLog(LOG_LEVEL_INFO, PSTR("UFS: Could not open file '%s'"), file);
     return 0;
   }
 
-  if (download_file.isDirectory()) {
-    download_file.close();
+  if (downloadFile.isDirectory()) {
+    downloadFile.close();
     return 1;
   }
 
 #ifndef ESP32_DOWNLOAD_TASK
-  WiFiClient download_Client;
-  uint32_t flen = download_file.size();
+  WiFiClient downloadClient;
+  uint32_t flen = downloadFile.size();
 
-  download_Client = Webserver->client();
+  downloadClient = Webserver->client();
   Webserver->setContentLength(flen);
 
   char attachment[100];
@@ -890,13 +890,13 @@ uint8_t UfsDownloadFile(char *file) {
   Webserver->sendHeader(F("Content-Disposition"), attachment);
   WSSend(200, CT_APP_STREAM, "");
 
-  uint8_t buff[512];
+  uint8_t buf[512];
   uint32_t bread;
   // transfer is about 150kb/s
   uint32_t cnt = 0;
-  while (download_file.available()) {
-    bread = download_file.read(buff, sizeof(buff));
-    uint32_t bw = download_Client.write((const char*)buff, bread);
+  while (downloadFile.available()) {
+    bread = downloadFile.read(buf, sizeof(buf));
+    uint32_t bw = downloadClient.write((const char*)buf, bread);
     if (!bw) { break; }
     cnt++;
     if (cnt > 7) {
@@ -905,25 +905,24 @@ uint8_t UfsDownloadFile(char *file) {
     delay(0);
     OsWatchLoop();
   }
-  download_file.close();
-  download_Client.stop();
+  downloadFile.close();
+  downloadClient.stop();
 #endif // ESP32_DOWNLOAD_TASK
 
 
 #ifdef ESP32_DOWNLOAD_TASK
-  download_file.close();
+  downloadFile.close();
 
-  if (UfsData.download_busy == true) {
+  if (UfsData.downloadBusy == true) {
     AddLog(LOG_LEVEL_INFO, PSTR("UFS: Download is busy"));
     return 0;
   }
 
-  UfsData.download_busy = true;
-  char *path = (char*)malloc(128);
+  UfsData.downloadBusy = true;
+  char path[128];
   strcpy(path,file);
-  BaseType_t ret = xTaskCreatePinnedToCore(download_task, "DT", 6000, (void*)path, 3, nullptr, 1);
-  if (ret != pdPASS)
-    AddLog(LOG_LEVEL_INFO, PSTR("UFS: Download task failed with %d"), ret);
+  BaseType_t ret = xTaskCreatePinnedToCore(downloadTask, "DT", 10000, (void *)&path, 3, nullptr, 1);
+  if (ret != pdPASS) AddLog(LOG_LEVEL_INFO, PSTR("UFS: Download task failed with %d"), ret);
   yield();
 #endif // ESP32_DOWNLOAD_TASK
 
@@ -933,17 +932,15 @@ uint8_t UfsDownloadFile(char *file) {
 
 #ifdef ESP32_DOWNLOAD_TASK
 #ifndef DOWNLOAD_SIZE
-#define DOWNLOAD_SIZE 4096
+  #define DOWNLOAD_SIZE 4096
 #endif // DOWNLOAD_SIZE
-void download_task(void *path) {
-  File download_file;
-  WiFiClient download_Client;
-  char *file = (char*) path;
-
-  download_file = dfsp->open(file, UFS_FILE_READ);
-  uint32_t flen = download_file.size();
-
-  download_Client = Webserver->client();
+void downloadTask(void *path) {
+  File downloadFile;
+  WiFiClient downloadClient;
+  char *file = (char *)path;
+  downloadFile = dfsp->open(file, UFS_FILE_READ);
+  uint32_t flen = downloadFile.size();
+  downloadClient = Webserver->client();
   Webserver->setContentLength(flen);
 
   char attachment[100];
@@ -957,22 +954,18 @@ void download_task(void *path) {
   snprintf_P(attachment, sizeof(attachment), PSTR("attachment; filename=%s"), cp);
   Webserver->sendHeader(F("Content-Disposition"), attachment);
   WSSend(200, CT_APP_STREAM, "");
-
-  uint8_t *buff = (uint8_t*)malloc(DOWNLOAD_SIZE);
-  if (buff) {
-    uint32_t bread;
-    while (download_file.available()) {
-      bread = download_file.read(buff, DOWNLOAD_SIZE);
-      uint32_t bw = download_Client.write((const char*)buff, bread);
-      if (!bw) { break; }
-    }
-    free(buff);
+  
+  uint8_t buf[DOWNLOAD_SIZE];
+  uint32_t bread;
+  while (downloadFile.available()) {
+    bread = downloadFile.read(buf, FILE_BUFFER_SIZE);
+    uint32_t bw = downloadClient.write(buf, bread);
+    if (!bw) { break; }
   }
-  download_file.close();
-  download_Client.stop();
-  UfsData.download_busy = false;
-  vTaskDelete( NULL );
-  free(path);
+  downloadFile.close();
+  downloadClient.stop();
+  UfsData.downloadBusy = false;
+  vTaskDelete(NULL);
 }
 #endif //  ESP32_DOWNLOAD_TASK
 
@@ -1031,7 +1024,7 @@ void UfsEditor(void) {
       AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: UfsEditor: file open failed"));
       WSContentSend_P(D_NEW_FILE);
     } else {
-      uint8_t *buf = (uint8_t*)malloc(FILE_BUFFER_SIZE+1);
+      uint8_t buf[FILE_BUFFER_SIZE+1];
       size_t filelen = fp.size();
       AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: UfsEditor: file len=%d"), filelen);
       while (filelen > 0) {
@@ -1043,7 +1036,6 @@ void UfsEditor(void) {
         filelen -= l;
       }
       fp.close();
-      free(buf);
       AddLog(LOG_LEVEL_DEBUG, PSTR("UFS: UfsEditor: read done"));
     }
   } else {
@@ -1111,6 +1103,14 @@ void UfsEditorUpload(void) {
 
 #endif  // GUI_EDIT_FILE
 
+void MicroSdCardShow(bool json) {
+  if (json) {
+
+  } else {
+
+  }
+}
+
 #endif  // USE_WEBSERVER
 
 /*********************************************************************************************\
@@ -1155,6 +1155,9 @@ bool Xdrv50(uint32_t function) {
       Webserver->on("/ufse", HTTP_GET, UfsEditor);
       Webserver->on("/ufse", HTTP_POST, UfsEditorUpload);
 #endif
+      break;
+    case FUNC_WEB_SENSOR:
+      MicroSdCardShow(0);
       break;
 #endif // USE_WEBSERVER
   }

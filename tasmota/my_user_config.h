@@ -1059,6 +1059,9 @@
                                                    // For details on the configuration please see the header of tasmota/xdrv_49_pid.ino
 // -- End of general directives ---------------------
 
+// -- Telecommunications ----------------------------
+  // #define USE_SIM7600X
+
 /*********************************************************************************************\
  * ESP32 only features
 \*********************************************************************************************/

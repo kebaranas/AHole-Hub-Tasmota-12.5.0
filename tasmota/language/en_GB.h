@@ -85,6 +85,7 @@
 #define D_DATE_TIME "Date & Time"
 #define D_DARKLIGHT "Dark"
 #define D_DEBUG "Debug"
+#define D_DEPTH "Depth"
 #define D_DEWPOINT "Dew point"
 #define D_DISABLED "Disabled"
 #define D_MOVING_DISTANCE "Moving Distance"
@@ -92,11 +93,11 @@
 #define D_DETECT_DISTANCE "Detect Distance"
 #define D_DISTANCE "Distance"
 #define D_DNS_SERVER "DNS Server"
-#define D_DO "Disolved Oxygen"
+#define D_DO "Dissolved Oxygen"
 #define D_DONE "Done"
 #define D_DST_TIME "DST"
-#define D_EC "EC"
 #define D_ECO2 "eCO₂"
+#define D_EC "Electrical Conductivity"
 #define D_EMULATION "Emulation"
 #define D_ENABLED "Enabled"
 #define D_ERASE "Erase"
@@ -107,7 +108,7 @@
 #define D_FALLBACK_TOPIC "Fallback Topic"
 #define D_FALSE "False"
 #define D_FILE "File"
-#define D_FLOW_RATE "Flow rate"
+#define D_FLOW_RATE "Flow Rate"
 #define D_FRAGMENTATION "frag."      // Lower case abbreviated version of fragmentation used in "memory fragmentation"
 #define D_FRAME_RATE "Frame rate"
 #define D_FREE_MEMORY "Free Memory"
@@ -148,7 +149,7 @@
 #define D_OK "Ok"
 #define D_ON "On"
 #define D_ONLINE "Online"
-#define D_ORP "ORP"
+#define D_ORP "Oxidation-Reduction Potential"
 #define D_PASSWORD "Password"
 #define D_PH "pH"
 #define D_MQ "MQ"
@@ -173,6 +174,7 @@
 #define D_RESTORE "restore"
 #define D_RETAINED "retained"
 #define D_RULE "Rule"
+#define D_SALINITY "Salinity"
 #define D_SAVE "Save"
 #define D_SENSOR "Sensor"
 #define D_SSID "SSId"
@@ -185,13 +187,16 @@
 #define D_SUCCESSFUL "Successful"
 #define D_SUNRISE "Sunrise"
 #define D_SUNSET "Sunset"
+#define D_TDS "Total Dissolved Solids"
 #define D_TEMPERATURE "Temperature"
 #define D_TO "to"
 #define D_TOGGLE "Toggle"
 #define D_TOPIC "Topic"
+#define D_TDS "Total Dissolved Solids"
 #define D_TOTAL_USAGE "Total Usage"
 #define D_TRANSMIT "Transmit"
 #define D_TRUE "True"
+#define D_TURBIDITY "Turbidity"
 #define D_TVOC "TVOC"
 #define D_UPGRADE "upgrade"
 #define D_UPLOAD "Upload"
@@ -218,6 +223,7 @@
 #define D_WEB_SERVER "Web Server"
 #define D_SOC "State of Charge"
 #define D_SOH "State of Health"
+
 
 // tasmota.ino
 #define D_WARNING_MINIMAL_VERSION "WARNING This version does not support persistent settings"
@@ -281,6 +287,7 @@
 #define D_CONSOLE "Console"
 #define D_CONFIRM_RESTART "Confirm Restart"
 #define D_MONITOR "Monitor"
+#define D_PUMP_TEST "Pump Test"
 
 #define D_CONFIGURE_INSTRUMENT "Configure Instrument"
 #define D_CONFIGURE_MODULE "Configure Module"
@@ -294,8 +301,6 @@
 #define D_BACKUP_CONFIGURATION "Backup Configuration"
 #define D_RESTORE_CONFIGURATION "Restore Configuration"
 #define D_MAIN_MENU "Main Menu"
-#define D_CHART_JS "Chart.js"
-
 #define D_MODULE_PARAMETERS "Module parameters"
 #define D_MODULE_TYPE "Module type"
 #define D_PULLUP_ENABLE "No Button/Switch pull-up"
@@ -303,6 +308,13 @@
 #define D_GPIO "GPIO"
 #define D_SERIAL_IN "Serial In"
 #define D_SERIAL_OUT "Serial Out"
+
+#define D_CHART_JS "chart.umd.js"
+#define D_DATE_ADAPTER_JS "chartjs-adapter-date-fns.bundle.min.js"
+#define D_MIN_JS "min.min.js"
+#define D_SVG_JS "svg.min.js"
+
+#define D_BEEP_MP3 "beep.mp3"
 
 #define D_WIFI_PARAMETERS "Wifi parameters"
 #define D_SCAN_FOR_WIFI_NETWORKS "Scan for wifi networks"
@@ -642,6 +654,10 @@
 // xsns_86_tfminiplus.ino
 #define D_SIGNALSTRENGTH "Signal Strength"
 #define D_CHIPTEMPERATURE "Chip Temperature"
+
+#define D_SIM7600X_RX "SIM7600X Rx"
+#define D_SIM7600X_TX "SIM7600X Tx"
+#define D_SIM7600X_PWR "SIM7600X Pwr"
 
 // tasmota_template.h - keep them as short as possible to be able to fit them in GUI drop down box
 #define D_SENSOR_NONE          "None"

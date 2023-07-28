@@ -170,21 +170,16 @@ uint8_t TasmotaModbus::Send(uint8_t device_address, uint8_t function_code, uint1
 
   flush();
 #ifdef TASMOTA_MODBUS_RE_DE_ENABLE
-  if (mb_re_enable_pin > -1) {
+  if (mb_re_enable_pin > -1 && mb_de_enable_pin > -1) {
     digitalWrite(mb_re_enable_pin, HIGH);
-  }
-  if (mb_de_enable_pin > -1) {
     digitalWrite(mb_de_enable_pin, HIGH);
   }
 #endif  // TASMOTA_MODBUS_RE_DE_ENABLE
   write(frame, framepointer);
 #ifdef TASMOTA_MODBUS_RE_DE_ENABLE
-  if (mb_re_enable_pin > -1) {
+  if (mb_re_enable_pin > -1 && mb_de_enable_pin > -1) {
     flush();  // Must wait for all data sent
     digitalWrite(mb_re_enable_pin, LOW);
-  }
-  if (mb_de_enable_pin > -1) {
-    flush();
     digitalWrite(mb_de_enable_pin, LOW);
   }
 #endif  // TASMOTA_MODBUS_RE_DE_ENABLE
